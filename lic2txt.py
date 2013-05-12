@@ -7,17 +7,20 @@ import sys
 # Connect to the Ohloh website and retrieve the account data.
 
 total = 58930
-page = 2392
+page = 3391
 api_key_file = 'ohloh_api_keys.txt'
 
 # read api keys file
 api_keys = []
 api_file = open(api_key_file)
+key_max = 0
 for key in api_file:
     api_keys.append(key.strip())
-api_key = api_keys[0]
+    key_max = key_max + 1
+key_num = 0
 
 while page < total:
+    api_key = api_keys[key_num]
     params = urllib.urlencode({'api_key': api_key, 'v': 1, 'sort':'id', 'page':page})
     url = "http://www.ohloh.net/projects.xml?%s" % params
     f = urllib.urlopen(url)
@@ -29,7 +32,11 @@ while page < total:
     elem = tree.getroot()
     error = elem.find("error")
     if error != None:
-	print 'Ohloh returned:', ET.tostring(error),
+        errortxt = ET.tostring(error)
+        if 'exceeded its daily access limit' in errortxt and key_num < key_max:
+            key_num = key_num + 1
+            continue
+	print 'Ohloh returned:', errortxt,
 	sys.exit()
 
     for node in elem.findall('result/project'):
